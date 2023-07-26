@@ -1,22 +1,33 @@
-node {
-    docker.image('maven:3.9.0').inside("-v /root/.m2:/root/.m2") {
+pipeline {
+    agent any
+    stages {
         stage('Build') {
-            sh 'mvn -B -DskipTests clean package'
+            steps {
+                dir('src') {
+                    sh 'mvn -B -DskipTests clean package'
+                }
+            }
         }
 
         stage('Test') {
-            try {
-                sh 'mvn test'
-            } catch (Exception e) {
-                currentBuild.result = 'UNSTABLE'
-                throw e
-            } finally {
-                junit 'target/surefire-reports/*.xml'
+            steps {
+                dir('src') {
+                    try {
+                        sh 'mvn test'
+                    } catch (Exception e) {
+                        currentBuild.result = 'UNSTABLE'
+                        throw e
+                    } finally {
+                        junit 'target/surefire-reports/*.xml'
+                    }
+                }
             }
         }
 
         stage('Deliver') {
-            sh './jenkins/scripts/deliver.sh'
+            steps {
+                sh './jenkins/scripts/deliver.sh'
+            }
         }
     }
 }
